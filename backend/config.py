@@ -11,6 +11,14 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 # Render may provide the legacy postgres:// scheme; psycopg 3 expects postgresql://.
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
+
+def validate_database_config(database_url: str, environ: dict[str, str]) -> None:
+    """Prevent a Render instance from silently using its private, ephemeral SQLite file."""
+    on_render = environ.get("RENDER", "").lower() == "true" or bool(environ.get("RENDER_SERVICE_ID"))
+    if on_render and not database_url:
+        raise RuntimeError("DATABASE_URL is required on Render. Set it to the linked PostgreSQL Internal Database URL.")
+
+validate_database_config(DATABASE_URL, os.environ)
 DATA.mkdir(parents=True, exist_ok=True)
 MEDIA.mkdir(parents=True, exist_ok=True)
 

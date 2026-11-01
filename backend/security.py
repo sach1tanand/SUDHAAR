@@ -1,6 +1,7 @@
 import base64, hashlib, hmac, json, secrets, time
 from fastapi import Header, HTTPException
 from .config import SECRET
+from . import db
 
 def hash_pw(pw: str, salt: bytes | None = None) -> str:
     salt = salt or secrets.token_bytes(16)
@@ -43,6 +44,16 @@ def _principal(authorization: str | None) -> dict:
 def citizen(authorization: str | None = Header(None)) -> dict:
     p = _principal(authorization)
     if p.get("role") != "citizen": raise HTTPException(403, "Citizen access only")
+    # Resolve citizen identity by its stable mobile number in the active shared
+    # database. A numeric ID from an instance-local SQLite file can collide with
+    # another user's ID on a different Render instance.
+    mobile = p.get("mobile")
+    if not isinstance(mobile, str) or not mobile:
+        raise HTTPException(401, "Citizen session is outdated. Sign in again.")
+    user = db.q("SELECT id FROM users WHERE mobile=?", (mobile,), one=True)
+    if not user:
+        raise HTTPException(401, "Citizen account is not in the active database. Sign in again.")
+    p["sub"] = user["id"]
     return p
 
 def officer(authorization: str | None = Header(None)) -> dict:

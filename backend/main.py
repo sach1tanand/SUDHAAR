@@ -103,7 +103,7 @@ def verify_otp(r: OtpVerify):
     db.x("DELETE FROM otps WHERE mobile=?", (m,))
     u = db.q("SELECT * FROM users WHERE mobile=?", (m,), one=True)
     uid = u["id"] if u else db.x("INSERT INTO users(mobile,created_at) VALUES(?,?)", (m, db.now()))
-    return {"token": sec.sign({"sub": uid, "role": "citizen"}, 30 * 86400), "role": "citizen"}
+    return {"token": sec.sign({"sub": uid, "role": "citizen", "mobile": m}, 30 * 86400), "role": "citizen"}
 
 @app.post("/api/staff/login")
 def staff_login(r: StaffLogin):
@@ -176,7 +176,14 @@ async def submit(bg: BackgroundTasks, u=Depends(sec.citizen),
                  category: str = Form(...), description: str = Form(""), lat: float = Form(...), lon: float = Form(...),
                  loc_source: str = Form(...), captured_at: str = Form(...), capture_token: str = Form(...),
                  client_id: str = Form(...), photo: UploadFile | None = File(None), video: UploadFile | None = File(None)):
-    prior = db.q("SELECT code FROM complaints WHERE user_id=? AND client_id=?", (u["sub"], client_id), one=True)
+    # A citizen token is only valid against the database that issued it. This
+    # catches stale tokens from an instance-local SQLite database before the FK
+    # failure on complaints.user_id, and uses the canonical stored ID below.
+    citizen = db.q("SELECT id FROM users WHERE id=?", (u["sub"],), one=True)
+    if not citizen:
+        raise HTTPException(401, "Citizen account is not in the active database. Sign in again.")
+    user_id = citizen["id"]
+    prior = db.q("SELECT code FROM complaints WHERE user_id=? AND client_id=?", (user_id, client_id), one=True)
     if prior:   # idempotent retry after a dropped connection
         return {"code": prior["code"], "duplicate_submission": True}
     if category not in routing.CATEGORIES: raise HTTPException(400, "Unknown category")
@@ -193,7 +200,7 @@ async def submit(bg: BackgroundTasks, u=Depends(sec.citizen),
         raise HTTPException(400, "Media timestamp is outside the live capture window")
     code = f"SDH-{datetime.now(timezone.utc):%y%m%d}-" + "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(5))
     cid = db.x("INSERT INTO complaints(code,user_id,category,description,lat,lon,loc_source,captured_at,status,client_id,created_at,updated_at) "
-               "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (code, u["sub"], category, description.strip()[:1000], lat, lon, loc_source,
+               "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (code, user_id, category, description.strip()[:1000], lat, lon, loc_source,
                captured_at, "Complaint Registered", client_id, db.now(), db.now()))
     try:
         if photo: await save_media(photo, "photo", cid, "original", lat, lon, captured_at)
@@ -201,7 +208,7 @@ async def submit(bg: BackgroundTasks, u=Depends(sec.citizen),
     except HTTPException:
         db.x("DELETE FROM media WHERE complaint_id=?", (cid,)); db.x("DELETE FROM complaints WHERE id=?", (cid,)); raise
     db.add_timeline(cid, "Complaint Registered", "Complaint received by Sudhaar", "system")
-    db.notify(u["sub"], code, f"{code}: complaint registered")
+    db.notify(user_id, code, f"{code}: complaint registered")
     bg.add_task(process, cid)
     return {"code": code, "status": "Complaint Registered", "category": category, "lat": lat, "lon": lon}
 

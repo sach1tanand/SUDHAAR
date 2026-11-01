@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 from backend.main import app
+from backend import config, db, security as sec
 
 @pytest.fixture(scope="module")
 def client():
@@ -45,6 +46,39 @@ def test_login_and_submit_photo_video_both_and_optional_description(client):
     assert r.status_code == 200
     d = client.get(f"/api/complaints/{r.json()['code']}", headers=h).json()
     assert d["description"] == "big pothole near school" and {m["kind"] for m in d["media"]} == {"photo", "video"}
+
+def test_authenticated_user_id_is_present_in_active_database_and_used_for_complaint(client):
+    mobile = "9888800011"
+    h = login(client, mobile)
+    claims = sec.verify(h["Authorization"].split(" ", 1)[1])
+    user = db.q("SELECT id FROM users WHERE mobile=?", (mobile,), one=True)
+    assert user is not None
+    assert claims["sub"] == user["id"]
+
+    response = submit(client, h, cid="same-db-user-regression")
+    assert response.status_code == 200, response.text
+    complaint = db.q("SELECT user_id FROM complaints WHERE code=?", (response.json()["code"],), one=True)
+    assert complaint["user_id"] == user["id"]
+
+def test_render_requires_shared_database_url():
+    with pytest.raises(RuntimeError, match="DATABASE_URL is required on Render"):
+        config.validate_database_config("", {"RENDER": "true"})
+    config.validate_database_config("postgresql://db.example/sudhaar", {"RENDER": "true"})
+
+def test_complaint_submission_rejects_stale_user_before_foreign_key_insert(client):
+    valid = login(client, "9888800012")
+    valid_claims = sec.verify(valid["Authorization"].split(" ", 1)[1])
+    # Simulate an instance-local SQLite token whose numeric ID collides with a
+    # different identity in the active database.
+    stale = {"Authorization": "Bearer " + sec.sign(
+        {"sub": valid_claims["sub"], "role": "citizen", "mobile": "9666600099"}, 3600)}
+    response = client.post("/api/complaints", headers=stale,
+        files={"photo": ("p.jpg", jpeg(), "image/jpeg")},
+        data=dict(category="Public Spaces", description="", lat=25.3, lon=82.97,
+                  loc_source="gps", captured_at=datetime.now(timezone.utc).isoformat(),
+                  capture_token="unused", client_id="missing-user-regression"))
+    assert response.status_code == 401
+    assert "Sign in again" in response.json()["detail"]
 
 def test_no_media_rejected_and_gallery_style_stale_capture_rejected(client):
     h = login(client)
