@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14367f">
+<meta name="color-scheme" content="light dark">
+<title>Sudhaar - Report. Resolve. Improve.</title>
+<meta name="description" content="Sudhaar is a civic grievance platform. Report a road, drainage, sanitation, lighting or water problem with one live photo, and follow it to the fix. Pilot city: Varanasi.">
+<meta property="og:title" content="Sudhaar - Report. Resolve. Improve.">
+<meta property="og:description" content="Report a civic problem with one live photo. Sudhaar routes it to the right department and you follow it to the fix.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/static/hero-ghat.svg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+<link rel="apple-touch-icon" href="/static/logo.svg">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<a class="skip" href="#app">Skip to content</a>
+<div id="net" role="status" hidden>You are offline. Reports are saved on this device and upload when the connection returns.</div>
+<div id="util" aria-label="Site tools">
+  <div class="u-left"><span class="u-city">Pilot city: Varanasi, Uttar Pradesh</span></div>
+  <div class="u-right">
+    <a href="#app" class="hide-s">Skip to content</a><span class="sep hide-s" aria-hidden="true"></span>
+    <button type="button" class="ub" id="fs-dec" aria-label="Decrease text size">A-</button>
+    <button type="button" class="ub" id="fs-reset" aria-label="Default text size">A</button>
+    <button type="button" class="ub" id="fs-inc" aria-label="Increase text size">A+</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button type="button" class="ub" id="hc" aria-pressed="false" aria-label="Toggle high contrast">Contrast</button>
+  </div>
+</div>
+<header id="top"></header>
+<div id="shell"><nav id="side" aria-label="Sections" hidden></nav><main id="app" aria-live="polite"><div class="boot" role="status" aria-label="Loading"><i></i></div></main></div>
+<footer id="foot" aria-label="Site footer"></footer>
+<nav id="tabs" aria-label="Main" hidden></nav>
+<div id="toast" role="status"></div>
+<section id="chat" hidden aria-label="Help chat">
+  <div class="chat-head"><img class="ava" src="/static/chatbot.svg" alt="" width="40" height="40"><div class="ct"><strong>Sahayak</strong><small><i class="on"></i>Sudhaar Help &middot; online</small></div><button id="chat-x" aria-label="Close chat">×</button></div>
+  <div id="chat-log"></div>
+  <div class="chat-in"><input id="chat-input" placeholder="Ask in English, Hindi or Hinglish" aria-label="Your question"><button id="chat-mic" title="Speak" aria-label="Speak your question">🎤</button><button id="chat-send" class="primary">Send</button></div>
+</section>
+<noscript><div class="card"><h1>JavaScript is required</h1><p>Sudhaar needs JavaScript to capture live photos and track complaints. Please enable it in your browser settings and reload.</p></div></noscript>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

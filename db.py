@@ -1,0 +1,110 @@
+import contextlib, hashlib, json, sqlite3, threading
+from datetime import datetime, timezone
+from .config import DB_PATH
+
+_lock = threading.RLock()
+
+def now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def conn() -> sqlite3.Connection:
+    c = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=30)
+    c.row_factory = sqlite3.Row
+    c.execute("PRAGMA foreign_keys=ON")
+    return c
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, mobile TEXT UNIQUE NOT NULL, created_at TEXT);
+CREATE TABLE IF NOT EXISTS otps(mobile TEXT PRIMARY KEY, code_hash TEXT, expires REAL, attempts INTEGER DEFAULT 0, sent_at REAL);
+CREATE TABLE IF NOT EXISTS departments(
+  id INTEGER PRIMARY KEY, name TEXT UNIQUE, short TEXT, level TEXT,
+  functions TEXT, jurisdiction TEXT, is_fallback INTEGER DEFAULT 0, active INTEGER DEFAULT 1);
+CREATE TABLE IF NOT EXISTS officers(
+  id INTEGER PRIMARY KEY, username TEXT UNIQUE, pw_hash TEXT, name TEXT,
+  role TEXT, dept_id INTEGER REFERENCES departments(id));
+CREATE TABLE IF NOT EXISTS field_officers(id INTEGER PRIMARY KEY, dept_id INTEGER REFERENCES departments(id), name TEXT, phone TEXT);
+CREATE TABLE IF NOT EXISTS zones(
+  id INTEGER PRIMARY KEY, name TEXT, kind TEXT, owner_level TEXT, dept_id INTEGER REFERENCES departments(id),
+  geometry TEXT, buffer_m REAL DEFAULT 40, categories TEXT, note TEXT);
+CREATE TABLE IF NOT EXISTS complaints(
+  id INTEGER PRIMARY KEY, code TEXT UNIQUE, user_id INTEGER REFERENCES users(id),
+  category TEXT, description TEXT, lat REAL, lon REAL, loc_source TEXT, captured_at TEXT,
+  status TEXT, dept_id INTEGER REFERENCES departments(id), gov_level TEXT,
+  severity TEXT, priority INTEGER, validity_score REAL,
+  ai_json TEXT, evidence_json TEXT, routing_json TEXT,
+  field_officer_id INTEGER, citizen_confirmed INTEGER DEFAULT 0, reopen_count INTEGER DEFAULT 0,
+  client_id TEXT, created_at TEXT, updated_at TEXT);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_c_client ON complaints(user_id, client_id);
+CREATE TABLE IF NOT EXISTS media(
+  id INTEGER PRIMARY KEY, complaint_id INTEGER REFERENCES complaints(id), kind TEXT, role TEXT,
+  path TEXT, mime TEXT, sha256 TEXT, size INTEGER, lat REAL, lon REAL, captured_at TEXT,
+  uploaded_by INTEGER, created_at TEXT);
+CREATE TABLE IF NOT EXISTS timeline(
+  id INTEGER PRIMARY KEY, complaint_id INTEGER REFERENCES complaints(id), status TEXT, note TEXT,
+  citizen_visible INTEGER DEFAULT 1, actor TEXT, created_at TEXT);
+CREATE TABLE IF NOT EXISTS notifications(
+  id INTEGER PRIMARY KEY, user_id INTEGER, complaint_code TEXT, message TEXT, read INTEGER DEFAULT 0, created_at TEXT);
+CREATE TABLE IF NOT EXISTS audit(
+  id INTEGER PRIMARY KEY, ts TEXT, actor_role TEXT, actor_id INTEGER, actor_name TEXT, dept_id INTEGER,
+  action TEXT, complaint_code TEXT, detail TEXT, prev_hash TEXT, hash TEXT);
+CREATE TABLE IF NOT EXISTS ai_trace(
+  id INTEGER PRIMARY KEY, run_id TEXT, complaint_code TEXT, seq INTEGER, stage TEXT, title TEXT, status TEXT,
+  inputs TEXT, outputs TEXT, notes TEXT, duration_ms INTEGER, started_at TEXT, finished_at TEXT);
+CREATE INDEX IF NOT EXISTS ix_trace_code ON ai_trace(complaint_code, id);
+CREATE INDEX IF NOT EXISTS ix_c_dept ON complaints(dept_id, status);
+CREATE INDEX IF NOT EXISTS ix_c_geo ON complaints(category, lat, lon);
+"""
+
+def init():
+    with _lock, contextlib.closing(conn()) as c, c:
+        c.execute("PRAGMA journal_mode=WAL")
+        c.executescript(SCHEMA)
+        # Append-only enforcement for the audit log
+        c.executescript("""
+        CREATE TRIGGER IF NOT EXISTS audit_no_update BEFORE UPDATE ON audit BEGIN SELECT RAISE(ABORT,'audit log is append-only'); END;
+        CREATE TRIGGER IF NOT EXISTS audit_no_delete BEFORE DELETE ON audit BEGIN SELECT RAISE(ABORT,'audit log is append-only'); END;
+        """)
+
+def q(sql, args=(), one=False):
+    with contextlib.closing(conn()) as c:
+        rows = c.execute(sql, args).fetchall()
+    rows = [dict(r) for r in rows]
+    return (rows[0] if rows else None) if one else rows
+
+def x(sql, args=()):
+    """Execute a write; returns lastrowid."""
+    with _lock, contextlib.closing(conn()) as c:
+        with c:
+            return c.execute(sql, args).lastrowid
+
+def audit(principal: dict, action: str, complaint_code: str | None = None, detail: str = "", dept_id=None):
+    """Hash-chained, append-only audit event."""
+    with _lock, contextlib.closing(conn()) as c, c:
+        last = c.execute("SELECT hash FROM audit ORDER BY id DESC LIMIT 1").fetchone()
+        prev = last["hash"] if last else "GENESIS"
+        rec = dict(ts=now(), actor_role=principal.get("role"), actor_id=principal.get("sub"),
+                   actor_name=principal.get("name"), dept_id=dept_id if dept_id is not None else principal.get("dept"),
+                   action=action, complaint_code=complaint_code, detail=detail)
+        h = hashlib.sha256((prev + json.dumps(rec, sort_keys=True)).encode()).hexdigest()
+        c.execute("INSERT INTO audit(ts,actor_role,actor_id,actor_name,dept_id,action,complaint_code,detail,prev_hash,hash) "
+                  "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                  (rec["ts"], rec["actor_role"], rec["actor_id"], rec["actor_name"], rec["dept_id"],
+                   action, complaint_code, detail, prev, h))
+
+def verify_audit_chain() -> dict:
+    prev, n = "GENESIS", 0
+    for r in q("SELECT * FROM audit ORDER BY id"):
+        rec = dict(ts=r["ts"], actor_role=r["actor_role"], actor_id=r["actor_id"], actor_name=r["actor_name"],
+                   dept_id=r["dept_id"], action=r["action"], complaint_code=r["complaint_code"], detail=r["detail"])
+        h = hashlib.sha256((prev + json.dumps(rec, sort_keys=True)).encode()).hexdigest()
+        if r["prev_hash"] != prev or r["hash"] != h:
+            return {"intact": False, "broken_at": r["id"], "checked": n}
+        prev, n = h, n + 1
+    return {"intact": True, "checked": n}
+
+def add_timeline(complaint_id: int, status: str, note: str = "", actor: str = "system", citizen_visible=1):
+    x("INSERT INTO timeline(complaint_id,status,note,citizen_visible,actor,created_at) VALUES(?,?,?,?,?,?)",
+      (complaint_id, status, note, citizen_visible, actor, now()))
+
+def notify(user_id: int, code: str, message: str):
+    x("INSERT INTO notifications(user_id,complaint_code,message,created_at) VALUES(?,?,?,?)", (user_id, code, message, now()))

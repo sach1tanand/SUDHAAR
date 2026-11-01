@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb4f2"/><stop offset=".55" stop-color="#f6d5b4"/><stop offset="1" stop-color="#ffc98a"/></linearGradient>
+<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".9"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
+<linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcb85"/><stop offset="1" stop-color="#ff8c1a"/></linearGradient>
+<linearGradient id="river" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b92e6"/><stop offset="1" stop-color="#1b4aa8"/></linearGradient>
+<linearGradient id="stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8ecd8"/><stop offset="1" stop-color="#e2cfab"/></linearGradient>
+</defs>
+<rect width="640" height="360" fill="url(#sky)"/>
+<circle cx="440" cy="205" r="150" fill="url(#glow)"/>
+<circle cx="440" cy="205" r="64" fill="url(#sun)"/>
+<g fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="2.4" stroke-linecap="round"><path d="M505 70q7-8 14 0q7-8 14 0"/><path d="M540 98q5-6 10 0q5-6 10 0"/><path d="M470 50q5-6 10 0q5-6 10 0"/></g>
+<!-- far bank skyline -->
+<g fill="#7f9ccf" opacity=".6" transform="translate(0 46)"><path d="M0 238h40v-20q12-22 24 0v20h30v-30h26v30h36v-14q16-30 32 0v14h40v-26h22v26h60v-18q10-18 20 0v18h50v-34h18v34h42v-22q14-26 28 0v22h72v-18q8-14 16 0v18h40v-24h20v24h20v14H0z"/></g>
+<rect x="0" y="284" width="640" height="4" fill="#7f9ccf" opacity=".5"/>
+<!-- temple spires -->
+<g fill="#25418f">
+<path d="M70 262c0-46 14-86 26-120 12 34 26 74 26 120z"/><rect x="92" y="126" width="8" height="18" rx="3"/><path d="M96 126v-16" stroke="#25418f" stroke-width="3"/><path d="M96 110l16 5-16 5z" fill="#ff9933"/>
+<path d="M150 262c0-34 10-62 20-86 10 24 20 52 20 86z" opacity=".92"/><circle cx="170" cy="172" r="5"/>
+<path d="M236 262c0-52 16-98 30-136 14 38 30 84 30 136z"/><circle cx="266" cy="120" r="6"/><path d="M266 114v-18" stroke="#25418f" stroke-width="3"/><path d="M266 96l16 5-16 5z" fill="#138808"/>
+<path d="M322 262v-52q16-30 32 0v52z"/><circle cx="338" cy="198" r="5"/>
+</g>
+<g fill="#fff" opacity=".18"><path d="M96 150c-4 30-8 60-14 100h-6c8-40 12-70 20-100z"/><path d="M266 140c-6 40-12 76-20 112h-8c10-40 16-76 28-112z"/></g>
+<!-- ghat: terrace with arches then steps into the river -->
+<rect x="0" y="262" width="420" height="22" fill="url(#stone)"/>
+<g fill="#25418f" opacity=".85"><path d="M16 284v-14q9-14 18 0v14z"/><path d="M58 284v-14q9-14 18 0v14z"/><path d="M100 284v-14q9-14 18 0v14z"/><path d="M142 284v-14q9-14 18 0v14z"/><path d="M184 284v-14q9-14 18 0v14z"/><path d="M226 284v-14q9-14 18 0v14z"/><path d="M268 284v-14q9-14 18 0v14z"/><path d="M310 284v-14q9-14 18 0v14z"/><path d="M352 284v-14q9-14 18 0v14z"/></g>
+<g>
+<rect x="0" y="284" width="440" height="10" fill="#f3e3c4"/><rect x="0" y="294" width="410" height="10" fill="#e9d6b0"/><rect x="0" y="304" width="380" height="10" fill="#f3e3c4"/>
+<rect x="0" y="314" width="350" height="10" fill="#e9d6b0"/><rect x="0" y="324" width="320" height="10" fill="#f3e3c4"/><rect x="0" y="334" width="290" height="10" fill="#e9d6b0"/><rect x="0" y="344" width="260" height="16" fill="#f3e3c4"/>
+</g>
+<g fill="#000" opacity=".07"><rect x="0" y="292" width="440" height="2"/><rect x="0" y="302" width="410" height="2"/><rect x="0" y="312" width="380" height="2"/><rect x="0" y="322" width="350" height="2"/><rect x="0" y="332" width="320" height="2"/><rect x="0" y="342" width="290" height="2"/></g>
+<!-- river -->
+<path d="M440 284h200v76H260v-16h30v-10h30v-10h30v-10h30v-10h30v-10h30z" fill="url(#river)"/>
+<path d="M440 284H640v6H440z" fill="#fff" opacity=".25"/>
+<g fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round"><path d="M420 322q10-6 20 0t20 0t20 0"/><path d="M500 340q10-6 20 0t20 0t20 0"/><path d="M560 304q10-6 20 0t20 0"/><path d="M380 346q10-6 20 0t20 0"/></g>
+<g fill="none" stroke="#ffd9a0" stroke-opacity=".8" stroke-width="3" stroke-linecap="round"><path d="M415 296h50"/><path d="M425 305h30"/><path d="M432 314h16"/></g>
+<!-- boat -->
+<g transform="translate(470 292)"><path d="M0 14h86l-10 14H12z" fill="#7b3f1b"/><path d="M0 14h86" stroke="#ff9933" stroke-width="4"/><path d="M44 14V-34" stroke="#3b2310" stroke-width="3"/><path d="M46 -32l32 40H46z" fill="#fff8ec"/><path d="M46 -32l-24 34h24z" fill="#ff9933"/><ellipse cx="44" cy="34" rx="48" ry="4" fill="#0e2a68" opacity=".25"/></g>
+<!-- diya lights on the steps -->
+<g fill="#ffb347"><circle cx="60" cy="330" r="3.4"/><circle cx="110" cy="320" r="3.4"/><circle cx="170" cy="340" r="3.4"/><circle cx="220" cy="310" r="3.4"/><circle cx="270" cy="332" r="3.4"/></g>
+</svg>

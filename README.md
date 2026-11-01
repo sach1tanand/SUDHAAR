@@ -80,7 +80,7 @@ Independent corroboration adds up to **2**: other citizens (0.6 each, max 2), ne
 Fill the `SITE` block at the top of `frontend/app.js` (operator, e-mail, phone, hours, data-retention text). Empty values are not shown.
 
 ## Config (env)
-`SUDHAAR_DATA`, `SUDHAAR_SECRET`, `SUDHAAR_DEV_OTP`, `ANTHROPIC_API_KEY`, `SUDHAAR_VISION_MODEL`, `SUDHAAR_YOLO_MODELS`, `SUDHAAR_YOLO_CONF`, `SUDHAAR_YOLO_MAP`, `NEWSAPI_KEY`, `GOOGLE_MAPS_KEY`, `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USER_AGENT`,
+`SUDHAAR_DATA`, `SUDHAAR_SECRET`, `SUDHAAR_DEV_OTP`, `ANTHROPIC_API_KEY`, `SUDHAAR_VISION_MODEL`, `SUDHAAR_YOLO_MODELS`, `SUDHAAR_YOLO_CONF`, `SUDHAAR_YOLO_MAP`, `NEWSAPI_KEY`, `GOOGLE_MAPS_KEY`, `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USER_AGENT`, `YOUTUBE_API_KEY`, `INSTAGRAM_ACCESS_TOKEN`, `INSTAGRAM_USER_ID`, `INSTAGRAM_HASHTAG`, `INSTAGRAM_GRAPH_API_VERSION`,
 `SUDHAAR_MAX_UPLOAD_MB`, `SUDHAAR_OFFLINE=1` (skip all external calls).
 
 The app loads settings from the project-root `.env` file at startup. Restart the server after changing it. The local `.env` is ignored by Git; never commit API credentials.
@@ -89,6 +89,8 @@ The app loads settings from the project-root `.env` file at startup. Restart the
 - **NewsAPI:** create an API key at [newsapi.org](https://newsapi.org/), then set `NEWSAPI_KEY=...` in `.env`. Sudhaar searches recent English news for Varanasi and the reported issue.
 - **Google Street View metadata:** create a Google Maps Platform project, enable the Street View Static API, enable billing, and create a key restricted to that API. Set `GOOGLE_MAPS_KEY=...`. Sudhaar only checks whether imagery exists and its date; this is historical context, not proof of a current issue.
 - **Reddit:** request and receive Reddit Data API access, then create app credentials and set `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, and a descriptive `REDDIT_USER_AGENT` in `.env`. The Reddit adapter searches recent public posts; it remains inactive until credentials are set. Follow Reddit's Data API terms and approval requirements.
+- **YouTube:** enable YouTube Data API v3 in a Google Cloud project, create an API key, and set `YOUTUBE_API_KEY=...` in `.env`. Sudhaar searches public video titles for the report query and links to matching videos. Google documents search requests at [YouTube Data API search.list](https://developers.google.com/youtube/v3/docs/search/list); search quota applies.
+- **Instagram:** configure Meta's Instagram Graph API hashtag search with an eligible Instagram professional account and approved app permissions. Set `INSTAGRAM_ACCESS_TOKEN=...`, `INSTAGRAM_USER_ID=...`, and `INSTAGRAM_HASHTAG=varanasi` in `.env`; optionally set `INSTAGRAM_GRAPH_API_VERSION=v22.0` to match the version enabled for your app. This searches recent media for that one configured hashtag; it cannot search arbitrary public captions or all Instagram posts. Meta access, permissions, and hashtag limits apply. See [Instagram Graph API hashtag search](https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-hashtag-search).
 - **YOLO:** `SUDHAAR_YOLO_MODELS` is preconfigured for the two weight files in `weight/`. Install `ultralytics` in the Python environment used to launch Sudhaar. YOLO runs first; Claude vision is only a fallback when `ANTHROPIC_API_KEY` is configured.
 
-After adding keys, restart Sudhaar and submit a test complaint. The AI monitor (`#/ai`) shows whether NewsAPI, Street View, and vision engines are configured and records external lookup errors.
+After adding keys, restart Sudhaar and submit a test complaint. The AI monitor (`#/ai`) shows whether NewsAPI, YouTube, Instagram, Street View, and vision engines are configured and records external lookup errors.
