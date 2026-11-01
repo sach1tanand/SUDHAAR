@@ -1,0 +1,22 @@
+﻿# Public demonstration deployment. Uses paid compute and persistent storage.
+services:
+  - type: web
+    name: sudhaar-demo
+    runtime: docker
+    plan: standard
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/meta
+    envVars:
+      - key: PORT
+        value: "7860"
+      - key: SUDHAAR_DATA
+        value: /data
+      - key: SUDHAAR_SECRET
+        generateValue: true
+      - key: SUDHAAR_DEV_OTP
+        value: "1"
+    disk:
+      name: sudhaar-data
+      mountPath: /data
+      sizeGB: 1
