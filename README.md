@@ -85,6 +85,19 @@ Fill the `SITE` block at the top of `frontend/app.js` (operator, e-mail, phone, 
 
 The app loads settings from the project-root `.env` file at startup. Restart the server after changing it. The local `.env` is ignored by Git; never commit API credentials.
 
+### PostgreSQL / Render
+SQLite remains the local default. Set `DATABASE_URL` to a PostgreSQL connection string to use PostgreSQL (Render's `postgres://` and `postgresql://` forms are supported). `psycopg[binary]` is installed from `requirements.txt`.
+
+To copy an existing local SQLite database, create a Render PostgreSQL database, then run this **before deploying/starting the web service** from the project root. Use the database's **External Database URL** for this one-time command so your computer can reach it; do not commit or paste the URL into source files:
+
+```powershell
+$env:DATABASE_URL = "<Render External Database URL>"
+python -m backend.migrate_sqlite_to_postgres
+Remove-Item Env:DATABASE_URL
+```
+
+The script reads `data/sudhaar.db` in read-only mode by default. To use a different source file, set `SUDHAAR_SQLITE_PATH` to its path. It refuses to merge into any PostgreSQL destination table that already has rows, copies all records in one transaction, and leaves the SQLite file intact. After it succeeds, connect the Render web service to that PostgreSQL database so Render provides `DATABASE_URL` (prefer the **Internal Database URL** for a service in the same region), then deploy. The service start command is `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`; the build command installs `requirements.txt`.
+
 ### Enable external sources
 - **NewsAPI:** create an API key at [newsapi.org](https://newsapi.org/), then set `NEWSAPI_KEY=...` in `.env`. Sudhaar searches recent English news for Varanasi and the reported issue.
 - **Google Street View metadata:** create a Google Maps Platform project, enable the Street View Static API, enable billing, and create a key restricted to that API. Set `GOOGLE_MAPS_KEY=...`. Sudhaar only checks whether imagery exists and its date; this is historical context, not proof of a current issue.

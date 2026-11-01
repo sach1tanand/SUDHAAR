@@ -85,7 +85,8 @@ def otp(r: OtpReq):
     row = db.q("SELECT * FROM otps WHERE mobile=?", (m,), one=True)
     if row and time.time() - row["sent_at"] < 30: raise HTTPException(429, "Please wait 30 seconds before requesting another OTP")
     code = "".join(random.SystemRandom().choice(string.digits) for _ in range(6))
-    db.x("INSERT OR REPLACE INTO otps(mobile,code_hash,expires,attempts,sent_at) VALUES(?,?,?,0,?)",
+    db.x("INSERT INTO otps(mobile,code_hash,expires,attempts,sent_at) VALUES(?,?,?,0,?) "
+         "ON CONFLICT(mobile) DO UPDATE SET code_hash=excluded.code_hash, expires=excluded.expires, attempts=0, sent_at=excluded.sent_at",
          (m, sec.hash_otp(m, code), time.time() + 300, time.time()))
     # TODO(production): send `code` through an SMS gateway (e.g. MSG91/Twilio) - spec leaves auth implementation open.
     print(f"[sudhaar] OTP for {m}: {code}")

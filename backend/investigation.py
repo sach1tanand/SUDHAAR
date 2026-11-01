@@ -5,7 +5,7 @@ The scoring formula and severity rubric are PROVISIONAL (spec lists them as defe
 isolated in WEIGHTS / severity_rules() so they can be tuned during testing.
 """
 import base64, hashlib, json, os, re, shutil, subprocess, tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from urllib.parse import urlparse
 import httpx
 from . import db, config, vision
@@ -96,8 +96,9 @@ def _analyse_media(media, category, findings, st) -> dict:
 
 # ------------------------------------------------------------------ internal corroboration
 def internal_matches(c: dict) -> dict:
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = db.q("SELECT code,user_id,lat,lon,created_at,status FROM complaints WHERE category=? AND id<>? "
-                "AND created_at >= datetime('now', ?)", (c["category"], c["id"], f"-{LOOKBACK_DAYS} days"))
+                "AND created_at >= ?", (c["category"], c["id"], cutoff))
     near = [r for r in rows if haversine_m(c["lat"], c["lon"], r["lat"], r["lon"]) <= NEARBY_M]
     indep = {r["user_id"] for r in near if r["user_id"] != c["user_id"]}
     return dict(nearby_codes=[r["code"] for r in near][:20], independent_reporters=len(indep),
